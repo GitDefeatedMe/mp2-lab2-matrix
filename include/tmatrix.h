@@ -35,6 +35,8 @@ public:
 	}
 	TDynamicVector(T* arr, size_t s) : sz(s)
 	{
+		if (sz > MAX_VECTOR_SIZE)
+			throw out_of_range("The vector size is too long");
 		assert(arr != nullptr && "TDynamicVector ctor requires non-nullptr arg");
 		pMem = new T[sz];
 		std::copy(arr, arr + sz, pMem);
@@ -66,6 +68,11 @@ public:
 	}
 	TDynamicVector& operator=(TDynamicVector&& v) noexcept
 	{
+		if (pMem != nullptr)
+		{
+			delete[] pMem;
+			pMem = nullptr;
+		}
 		swap(*this, v);
 		return *this;
 	}
@@ -165,7 +172,7 @@ public:
 		}
 		return tmp;
 	}
-	T operator*(const TDynamicVector& v) noexcept(noexcept(T()))
+	T operator*(const TDynamicVector& v)
 	{
 		if (sz != v.sz)
 			throw out_of_range("differet sizes of vectors");
@@ -226,7 +233,7 @@ public:
 	}
 
 	// матрично-скалярные операции
-	TDynamicVector<T> operator*(const T& val)
+	TDynamicMatrix operator*(const T& val)
 	{
 		TDynamicMatrix tmp(sz);
 		for (size_t i = 0; i < sz; i++)
@@ -268,12 +275,17 @@ public:
 	}
 	TDynamicMatrix operator*(const TDynamicMatrix& m)
 	{
-		TDynamicMatrix tmp(sz);
-		for (size_t i = 0; i < sz; i++)
-			for (size_t j = 0; i < sz; j++)
-				for (size_t k = 0; i < sz; k++)
-					tmp.pMem[i][j] = pMem[i][k] + m.pMem[k][j];
-		return tmp;
+		if (m.size() == size())
+		{
+			TDynamicMatrix tmp(sz);
+			for (size_t i = 0; i < sz; i++)
+				for (size_t j = 0; j < sz; j++)
+					for (size_t k = 0; k < sz; k++)
+						tmp[i][j] += pMem[i][k] * m[k][j];
+			return tmp;
+		}
+		else
+			throw exception("bad size");
 	}
 
 	// ввод/вывод
@@ -289,9 +301,8 @@ public:
 		ostr << "\n";
 		for (size_t i = 0; i < v.sz; i++)
 		{
-			ostr << "\t";
 			for (size_t j = 0; j < v.sz; j++)
-				ostr << v.pMem[i][j] << ",  ";
+				ostr << v.pMem[i][j] << " ";
 			ostr << "\n";
 		}
 		return ostr;
